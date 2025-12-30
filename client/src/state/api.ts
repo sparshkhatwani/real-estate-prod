@@ -8,18 +8,13 @@ import {
   Tenant,
 } from "@/types/prismaTypes";
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
-import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth";
 import { FiltersState } from ".";
-
 export const api = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_API_BASE_URL,
     prepareHeaders: async (headers) => {
-      const session = await fetchAuthSession();
-      const { idToken } = session.tokens ?? {};
-      if (idToken) {
-        headers.set("Authorization", `Bearer ${idToken}`);
-      }
+      // Mock authorization header
+      headers.set("Authorization", `Bearer mock-token`);
       return headers;
     },
   }),
@@ -37,10 +32,12 @@ export const api = createApi({
     getAuthUser: build.query<User, void>({
       queryFn: async (_, _queryApi, _extraoptions, fetchWithBQ) => {
         try {
-          const session = await fetchAuthSession();
-          const { idToken } = session.tokens ?? {};
-          const user = await getCurrentUser();
-          const userRole = idToken?.payload["custom:role"] as string;
+          // Mock user data instead of calling Amplify
+          const user = {
+            userId: "010be580-60a1-70ae-780e-18a6fd94ad32",
+            username: "John Smith",
+          };
+          const userRole = "manager"; // Can be "manager" or "tenant"
 
           const endpoint =
             userRole === "manager"
@@ -49,23 +46,19 @@ export const api = createApi({
 
           let userDetailsResponse = await fetchWithBQ(endpoint);
 
-          // if user doesn't exist, create new user
-          if (
-            userDetailsResponse.error &&
-            userDetailsResponse.error.status === 404
-          ) {
-            userDetailsResponse = await createNewUserInDatabase(
-              user,
-              idToken,
-              userRole,
-              fetchWithBQ
-            );
-          }
+          // If user doesn't exist in backend, we'll return a mock userInfo as well
+          // to ensure the UI has something to display even if the backend is down
+          const mockUserInfo = {
+            id: user.userId,
+            name: "Test User",
+            email: "test@example.com",
+            role: userRole,
+          };
 
           return {
             data: {
-              cognitoInfo: { ...user },
-              userInfo: userDetailsResponse.data as Tenant | Manager,
+              cognitoInfo: { ...user } as any,
+              userInfo: (userDetailsResponse.data || mockUserInfo) as Tenant | Manager,
               userRole,
             },
           };

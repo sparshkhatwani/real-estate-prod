@@ -7,7 +7,6 @@ import React from "react";
 import { Button } from "./ui/button";
 import { useGetAuthUserQuery } from "@/state/api";
 import { usePathname, useRouter } from "next/navigation";
-import { signOut } from "aws-amplify/auth";
 import { Bell, MessageCircle, Plus, Search } from "lucide-react";
 import {
   DropdownMenu,
@@ -28,7 +27,7 @@ const Navbar = () => {
     pathname.includes("/managers") || pathname.includes("/tenants");
 
   const handleSignOut = async () => {
-    await signOut();
+    // Mock signOut by just redirecting to home
     window.location.href = "/";
   };
 

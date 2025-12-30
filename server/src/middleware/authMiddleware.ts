@@ -1,10 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import jwt, { JwtPayload } from "jsonwebtoken";
-
-interface DecodedToken extends JwtPayload {
-  sub: string;
-  "custom:role"?: string;
-}
 
 declare global {
   namespace Express {
@@ -19,31 +13,21 @@ declare global {
 
 export const authMiddleware = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction): void => {
-    const token = req.headers.authorization?.split(" ")[1];
+    // Bypassing authentication check for development
+    // Mock user data for testing purposes
+    req.user = {
+      id: "010be580-60a1-70ae-780e-18a6fd94ad32", // John Smith (Manager)
+      role: "manager", // Default role for bypassed auth
+    };
 
-    if (!token) {
-      res.status(401).json({ message: "Unauthorized" });
-      return;
-    }
-
-    try {
-      const decoded = jwt.decode(token) as DecodedToken;
-      const userRole = decoded["custom:role"] || "";
-      req.user = {
-        id: decoded.sub,
-        role: userRole,
-      };
-
-      const hasAccess = allowedRoles.includes(userRole.toLowerCase());
-      if (!hasAccess) {
-        res.status(403).json({ message: "Access Denied" });
-        return;
-      }
-    } catch (err) {
-      console.error("Failed to decode token:", err);
-      res.status(400).json({ message: "Invalid token" });
-      return;
-    }
+    // If you want to allow all roles during bypass, we just call next()
+    // Or if you want to strictly check against allowedRoles even with mock:
+    // const userRole = req.user.role;
+    // const hasAccess = allowedRoles.includes(userRole.toLowerCase());
+    // if (!hasAccess) {
+    //   res.status(403).json({ message: "Access Denied" });
+    //   return;
+    // }
 
     next();
   };
